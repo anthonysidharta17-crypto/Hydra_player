@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import Splash from './components/Splash'
 import Shell from './components/Shell'
 import Login from './screens/Login'
+import AccessRequest from './screens/AccessRequest'
+import PendingAccess from './screens/PendingAccess'
 import { AppProvider, useApp } from './context/AppContext'
 import { useAuth } from './hooks/useAuth'
 import { usePrefs } from './hooks/usePrefs'
@@ -26,7 +28,9 @@ export default function App() {
   useBackButton({ route, param, phase: auth.phase, navigate, exitOpen, setExitOpen })
   let content
   if (auth.phase === 'boot') content = <Splash message="Verificando seu acesso…" />
-  else if (auth.phase === 'login') content = <Login onLogin={auth.login} fields={auth.fields} notice={auth.notice} />
+  else if (auth.phase === 'request') content = <AccessRequest onRequest={auth.requestAccess} notice={auth.notice} />
+  else if (auth.phase === 'pending') content = <PendingAccess registration={auth.registration} onRefresh={auth.refreshRegistration} onReset={auth.resetRegistration} notice={auth.notice} />
+  else if (auth.phase === 'login') content = <Login onLogin={auth.login} onRegister={auth.showRequest} fields={auth.fields} notice={auth.notice} />
   else content = <AppProvider creds={auth.session.creds} navigate={navigate}>
     <StartupGate><Shell session={auth.session} route={route} param={param} navigate={navigate} prefs={prefs} updatePrefs={updatePrefs}
       onLogout={auth.logout} onSwitchLogin={auth.switchLogin} onForget={auth.forget} /></StartupGate>
