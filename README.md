@@ -10,6 +10,9 @@ Projeto React + Vite para reprodução de conteúdos fornecidos por um servidor 
 - Controles de reprodução, áudio/legendas quando expostos pelo stream, legenda externa SRT/VTT, tela cheia e suporte a teclado/controle remoto.
 - Histórico e retomada de reprodução, preferências do player.
 - Telas de Rádio (com favoritos), Catch-up, Minha conta (atualiza os dados do servidor), suporte Hydra e histórico, com disponibilidade condicionada ao que o provedor Xtream oferece.
+- Botão Voltar do Android volta à página anterior; na tela Início pergunta se quer sair.
+- Continuar assistindo (Início e menu), aba Assistidos, marcação de episódios vistos e retomada de onde parou.
+- Formato da imagem no player (Ajustar, Preencher, Esticar) e tela sempre ligada durante o vídeo.
 - Configurações de reprodução ligadas ao player (áudio, legenda, retomar, salto, próximo episódio).
 - Splash com três cabeças da Hidra animadas. O arquivo original `public/logo.svg` foi preservado.
 

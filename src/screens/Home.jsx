@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Info, Heart } from 'lucide-react'
 import Row from '../components/Row'
+import ContinueRow from '../components/ContinueRow'
 import LoadState from '../components/LoadState'
 import { useApp } from '../context/AppContext'
 import { recommend } from '../core/catalog'
@@ -33,7 +34,7 @@ export default function Home() {
         <button className="btn-outline" onClick={() => toggleFavorite(hero)} aria-pressed={fav}><Heart size={16} fill={fav ? 'currentColor':'none'}/> {fav ? 'Na minha lista':'Minha lista'}</button></div>
       {heroInfo?.plotSource && <small className="source-note">Sinopse: {heroInfo.plotSource}</small>}
     </div></section>}
-    <Row title="Continuar assistindo" items={resume}/>
+    <ContinueRow/>
     <Row title="Recomendados para você" hint="com base na sua lista" items={picks}/>
     <Row title="Filmes novos" items={catalog.movie?.latest || []}/><Row title="Séries novas" items={catalog.series?.latest || []}/>
     {!hero && !catalog.movie?.latest?.length && !catalog.series?.latest?.length && <p className="empty-note">Seu catálogo carregou. Use o menu para navegar por TV, filmes e séries.</p>}

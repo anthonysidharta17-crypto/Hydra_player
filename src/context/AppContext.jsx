@@ -53,9 +53,10 @@ export function AppProvider({ creds, navigate, children }) {
   }, [catalog, favorites])
   const play = useCallback((item, opts = {}) => {
     if (!item) return
-    const episodeId = opts && typeof opts === 'object' ? (opts.episodeId ?? opts.id ?? null) : null
+    const episodeId = opts && typeof opts === 'object' ? (opts.episodeId ?? opts.sid ?? opts.id ?? null) : null
+    const fromStart = !!(opts && typeof opts === 'object' && opts.fromStart)
     const streamUrl = opts && typeof opts === 'object' ? (opts.streamUrl || null) : null
-    setPlayer({ item, episodeId, streamUrl, key: Date.now() })
+    setPlayer({ item, episodeId, streamUrl, fromStart, key: Date.now() })
   }, [])
   const closePlayer = useCallback(() => setPlayer(null), [])
   const failPlayer = useCallback(() => { setPlayer(null); showToast('Não foi possível abrir o player. Tente novamente.') }, [showToast])

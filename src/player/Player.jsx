@@ -7,7 +7,7 @@ import { callApi } from '../core/api'
 import { SERVER } from '../config'
 import { mediaUrl } from '../core/xtream'
 import { saveProgress, getProgress } from '../core/history'
-import { loadPrefs, savePrefs, getLastEpisode, setLastEpisode } from '../core/playerPrefs'
+import { loadPrefs, savePrefs, getLastEpisode, setLastEpisode, markWatched } from '../core/playerPrefs'
 import { detectDevice, bufferProfile, planFormats, swapProtocol, explainFailure } from './ai'
 import { startAttempt } from './engine'
 import PrefsPanel from './PrefsPanel'
@@ -20,6 +20,9 @@ const fmt = s => {
   const x = Math.floor(s % 60)
   return `${h ? `${h}:${String(m).padStart(2, '0')}` : m}:${String(x).padStart(2, '0')}`
 }
+
+const FIT = { contain: 'Ajustar', cover: 'Preencher', fill: 'Esticar' }
+const FIT_ORDER = ['contain', 'cover', 'fill']
 
 const isPt = t => /^pt/i.test(t.lang || t.language || '') || /portugu|\bpt\b|brasil|dublad|\bdub\b/i.test(t.label || '')
 
@@ -55,8 +58,8 @@ async function loadEpisodes(creds, item, signal) {
     .sort((a, b) => a.season - b.season || a.num - b.num)
 }
 
-function startFor(source, prefs, item) {
-  if (source.kind === 'live' || !prefs.resume) return 0
+function startFor(source, prefs, item, fromStart) {
+  if (source.kind === 'live' || source.kind === 'catchup' || fromStart || !prefs.resume) return 0
   let t = 0
   let d = 0
   if (source.kind === 'series') {
@@ -109,6 +112,7 @@ export default function Player({ request, creds, onClose, showToast }) {
   const menuRef = useRef(null)
   menuRef.current = menu
   const fileRef = useRef(null)
+  const fromStartRef = useRef(!!request.fromStart)
   const act = useRef({})
 
   const episode = useMemo(() => episodes.find(e => e.id === epId) || null, [episodes, epId])
@@ -147,12 +151,13 @@ export default function Player({ request, creds, onClose, showToast }) {
   const persist = useCallback(() => {
     const v = videoRef.current
     const s = sourceRef.current
-    if (!v || !s || s.kind === 'live') return
+    if (!v || !s || s.kind === 'live' || s.kind === 'catchup') return
     const t = v.currentTime
     const d = isFinite(v.duration) ? v.duration : 0
     if (!(t > 5)) return
     saveProgress(item.id, t, d)
     if (s.kind === 'series') setLastEpisode(item.sid, s.id, t, d)
+    if (d > 0 && t / d >= 0.95) markWatched(s.kind === 'series' ? `ep-${s.id}` : item.id)
   }, [item])
 
   useEffect(() => {
@@ -192,8 +197,14 @@ export default function Player({ request, creds, onClose, showToast }) {
     loadEpisodes(credsRef.current, item, ctrl.signal).then(list => {
       if (!list.length) throw new Error('vazio')
       const last = getLastEpisode(item.sid)
-      const wanted = request.episodeId != null ? String(request.episodeId) : null
-      const pick = list.find(e => e.id === wanted) || list.find(e => last && e.id === last.id) || list[0]
+      const wanted = request.episodeId != null ? String(request.episodeId).replace(/^episode-/, '') : null
+      // Retoma o último episódio; se ele já terminou, segue para o próximo.
+      let resumeEp = last ? list.find(e => e.id === last.id) : null
+      if (resumeEp && last.d > 0 && last.t >= last.d * 0.95) {
+        const next = list[list.indexOf(resumeEp) + 1]
+        if (next) resumeEp = next
+      }
+      const pick = list.find(e => e.id === wanted) || resumeEp || list[0]
       setEpisodes(list)
       setEpId(pick.id)
     }).catch(err => {
@@ -336,7 +347,8 @@ export default function Player({ request, creds, onClose, showToast }) {
         if (r.ok) {
           handleRef.current = r.handle
           setPhase('playing'); setNote(''); setProblem(null)
-          const start = startFor(source, prefsRef.current, item)
+          const start = startFor(source, prefsRef.current, item, fromStartRef.current)
+          fromStartRef.current = false
           if (start > 0) {
             try { video.currentTime = start } catch { /* ignora */ }
             showToast?.(`Retomando de ${fmt(start)}`)
@@ -379,9 +391,21 @@ export default function Player({ request, creds, onClose, showToast }) {
   const toggleFull = useCallback(() => {
     const el = boxRef.current
     if (!el) return
-    if (!document.fullscreenElement) Promise.resolve(el.requestFullscreen?.()).catch(() => {})
-    else document.exitFullscreen?.()
-  }, [])
+    if (!document.fullscreenElement) {
+      Promise.resolve(el.requestFullscreen?.())
+        .then(() => { if (device.kind === 'phone') { try { Promise.resolve(screen.orientation?.lock?.('landscape')).catch(() => {}) } catch { /* ignora */ } } })
+        .catch(() => {})
+    } else {
+      try { screen.orientation?.unlock?.() } catch { /* ignora */ }
+      document.exitFullscreen?.()
+    }
+  }, [device])
+  const cycleFit = useCallback(() => {
+    const cur = FIT_ORDER.indexOf(prefsRef.current.fit || 'contain')
+    const next = FIT_ORDER[(cur + 1) % FIT_ORDER.length]
+    updatePrefs({ fit: next })
+    showToast?.(`Imagem: ${FIT[next]}`)
+  }, [updatePrefs, showToast])
   const goEpisode = useCallback(id => {
     persist()
     setLastEpisode(item.sid, id, 0, 0)
@@ -441,12 +465,33 @@ export default function Player({ request, creds, onClose, showToast }) {
   }, [])
 
   useEffect(() => {
-    const h = () => setFull(!!document.fullscreenElement)
+    const h = () => {
+      setFull(!!document.fullscreenElement)
+      if (!document.fullscreenElement) { try { screen.orientation?.unlock?.() } catch { /* ignora */ } }
+    }
     document.addEventListener('fullscreenchange', h)
     return () => document.removeEventListener('fullscreenchange', h)
   }, [])
 
   useEffect(() => { poke(); return () => clearTimeout(hideTimer.current) }, [poke])
+
+  // ---- Tela sempre ligada durante o vídeo; libera a rotação ao sair ----
+  useEffect(() => {
+    let lock = null
+    let dead = false
+    const get = async () => {
+      try { if (!dead && 'wakeLock' in navigator && document.visibilityState === 'visible') lock = await navigator.wakeLock.request('screen') } catch { /* ignora */ }
+    }
+    get()
+    const vis = () => { if (document.visibilityState === 'visible') get() }
+    document.addEventListener('visibilitychange', vis)
+    return () => {
+      dead = true
+      document.removeEventListener('visibilitychange', vis)
+      try { lock?.release?.()?.catch?.(() => {}) } catch { /* ignora */ }
+      try { screen.orientation?.unlock?.() } catch { /* ignora */ }
+    }
+  }, [])
 
   // ---- Eventos do vídeo ----
   const onPlaying = () => {
@@ -464,9 +509,13 @@ export default function Player({ request, creds, onClose, showToast }) {
     }
   }
   const onEnded = () => {
-    if (source && source.kind !== 'live') {
+    if (source && source.kind !== 'live' && source.kind !== 'catchup') {
       const d = videoRef.current?.duration
-      if (isFinite(d)) saveProgress(item.id, d, d)
+      if (isFinite(d)) {
+        saveProgress(item.id, d, d)
+        if (source.kind === 'series') setLastEpisode(item.sid, source.id, d, d)
+        markWatched(source.kind === 'series' ? `ep-${source.id}` : item.id)
+      }
     }
     if (source?.kind === 'series' && prefs.autoNext && nextEp) { showToast?.('Próximo episódio…'); goNext() } else setShow(true)
   }
@@ -483,6 +532,7 @@ export default function Player({ request, creds, onClose, showToast }) {
       <video
         ref={videoRef}
         className="pl-video"
+        style={{ objectFit: prefs.fit || 'contain' }}
         playsInline
         autoPlay
         onPlaying={onPlaying}
@@ -530,6 +580,8 @@ export default function Player({ request, creds, onClose, showToast }) {
           <strong>{item.name}</strong>
           {source?.sub && <span>{source.sub}</span>}
         </div>
+        <span className="pl-grow-top" />
+        {!live && <button type="button" className="pl-btn pl-fit" onClick={cycleFit} aria-label="Formato da imagem">{FIT[prefs.fit || 'contain']}</button>}
       </div>
 
       <div className="pl-ui pl-bottom">

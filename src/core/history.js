@@ -18,4 +18,10 @@ export function saveProgress(id, time, duration) {
   if (ids.length > 300) ids.sort((a, b) => map[a].at - map[b].at).slice(0, ids.length - 300).forEach(k => delete map[k])
   try { localStorage.setItem(KEY, JSON.stringify(map)) } catch { /* sem espaço */ }
 }
+export function removeProgress(id) {
+  const map = read()
+  if (!(id in map)) return
+  delete map[id]
+  try { localStorage.setItem(KEY, JSON.stringify(map)) } catch { /* sem espaço */ }
+}
 export const clearHistory = () => { try { localStorage.removeItem(KEY) } catch { /* ignora */ } }

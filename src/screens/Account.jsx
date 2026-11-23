@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarClock, CircleCheck, CircleX, RefreshCw, ShieldCheck, Users } from 'lucide-react'
+import { CalendarClock, CircleCheck, RefreshCw, ShieldCheck, Users } from 'lucide-react'
 import { SERVER } from '../config'
 import { useApp } from '../context/AppContext'
 import { xtreamApi, normalizeAccount } from '../core/xtream'
@@ -25,7 +25,6 @@ export default function Account({session,prefs,updatePrefs}) {
       <div className="account-stat"><CalendarClock size={19}/><small>Expiração</small><b>{date}</b>{a.daysLeft!==null&&a.daysLeft!==undefined&&<span>{a.daysLeft<0?'Expirado':`${a.daysLeft} dias restantes`}</span>}</div>
       <div className="account-stat"><Users size={19}/><small>Conexões em uso</small><b>{a.activeConnections??0} / {a.maxConnections||'—'}</b><span>{a.trial?'Acesso de teste':'Acesso regular'}</span></div>
       <div className="account-stat"><CircleCheck size={19}/><small>Condição do acesso</small><b>{active?'Ativo':a.status||'Não confirmado'}</b><span>{a.trial?'Período de teste':'Conta Xtream'}</span></div>
-      <div className="account-stat"><CircleX size={19}/><small>Servidor</small><b>Conectado</b><span>{new URL(SERVER).host}</span></div>
     </section>
     <label className="form-label" htmlFor="profile-name">Nome neste aparelho</label>
     <input id="profile-name" className="app-input" maxLength={24} value={prefs?.profileName||''} onChange={e=>updatePrefs?.({profileName:e.target.value})} placeholder={a.username||'Seu nome'}/>

@@ -36,6 +36,11 @@ export default function PrefsPanel({ prefs, onChange, device }) {
           <Opt key={v} on={prefs.subSize === v} onClick={() => set({ subSize: v })}>{name}</Opt>
         ))}
       </Row>
+      <Row label="Formato da imagem">
+        <Opt on={(prefs.fit || 'contain') === 'contain'} onClick={() => set({ fit: 'contain' })}>Ajustar (sem cortar)</Opt>
+        <Opt on={prefs.fit === 'cover'} onClick={() => set({ fit: 'cover' })}>Preencher a tela</Opt>
+        <Opt on={prefs.fit === 'fill'} onClick={() => set({ fit: 'fill' })}>Esticar</Opt>
+      </Row>
       <Row label="Retomar de onde parou">
         <Opt on={prefs.resume} onClick={() => set({ resume: true })}>Sim</Opt>
         <Opt on={!prefs.resume} onClick={() => set({ resume: false })}>Não</Opt>

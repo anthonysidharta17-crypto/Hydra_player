@@ -7,6 +7,8 @@ import { useAuth } from './hooks/useAuth'
 import { usePrefs } from './hooks/usePrefs'
 import { useRoute } from './hooks/useRoute'
 import { useDpad } from './hooks/useDpad'
+import { useBackButton } from './hooks/useBackButton'
+import ExitConfirm from './components/ExitConfirm'
 function StartupGate({ children }) {
   const { status } = useApp()
   const [limit, setLimit] = useState(false)
@@ -19,11 +21,15 @@ export default function App() {
   const auth = useAuth()
   const { prefs, updatePrefs } = usePrefs()
   const { route, param, navigate } = useRoute()
+  const [exitOpen, setExitOpen] = useState(false)
   useDpad()
-  if (auth.phase === 'boot') return <Splash message="Verificando seu acesso…" />
-  if (auth.phase === 'login') return <Login onLogin={auth.login} fields={auth.fields} notice={auth.notice} />
-  return <AppProvider creds={auth.session.creds} navigate={navigate}>
+  useBackButton({ route, param, phase: auth.phase, navigate, exitOpen, setExitOpen })
+  let content
+  if (auth.phase === 'boot') content = <Splash message="Verificando seu acesso…" />
+  else if (auth.phase === 'login') content = <Login onLogin={auth.login} fields={auth.fields} notice={auth.notice} />
+  else content = <AppProvider creds={auth.session.creds} navigate={navigate}>
     <StartupGate><Shell session={auth.session} route={route} param={param} navigate={navigate} prefs={prefs} updatePrefs={updatePrefs}
       onLogout={auth.logout} onSwitchLogin={auth.switchLogin} onForget={auth.forget} /></StartupGate>
   </AppProvider>
+  return <>{content}{exitOpen && <ExitConfirm onStay={() => setExitOpen(false)} />}</>
 }

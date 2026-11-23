@@ -8,7 +8,8 @@ export const PREFS_DEFAULT = {
   subSize: 100,     // % do tamanho padrão da legenda
   resume: true,     // retomar de onde parou
   skip: 10,         // segundos dos botões de salto
-  autoNext: true    // próximo episódio automático
+  autoNext: true,   // próximo episódio automático
+  fit: 'contain'    // formato da imagem: 'contain' (ajustar) | 'cover' (preencher) | 'fill' (esticar)
 }
 
 export function loadPrefs() {
@@ -30,4 +31,24 @@ export function setLastEpisode(sid, id, t, d) {
   if (keys.length > 200) keys.sort((a, b) => map[a].at - map[b].at).slice(0, keys.length - 200).forEach(k => delete map[k])
   try { localStorage.setItem(EP_KEY, JSON.stringify(map)) } catch { /* sem espaço */ }
 }
-export const clearLastEpisodes = () => { try { localStorage.removeItem(EP_KEY) } catch { /* ignora */ } }
+export function removeLastEpisode(sid) {
+  const map = readEps()
+  if (!(sid in map)) return
+  delete map[sid]
+  try { localStorage.setItem(EP_KEY, JSON.stringify(map)) } catch { /* sem espaço */ }
+}
+
+// Marcação de "assistido" (filme: id do item; episódio: "ep-<id>").
+const WATCHED_KEY = 'hydra.watched'
+const readWatched = () => { try { return JSON.parse(localStorage.getItem(WATCHED_KEY) || '{}') } catch { return {} } }
+export const isWatched = id => !!readWatched()[id]
+export function markWatched(id) {
+  const map = readWatched()
+  if (map[id]) return
+  map[id] = Date.now()
+  const keys = Object.keys(map)
+  if (keys.length > 3000) keys.sort((a, b) => map[a] - map[b]).slice(0, keys.length - 3000).forEach(k => delete map[k])
+  try { localStorage.setItem(WATCHED_KEY, JSON.stringify(map)) } catch { /* sem espaço */ }
+}
+// Limpa o último episódio visto e as marcações de assistido (usado em "Apagar histórico").
+export const clearLastEpisodes = () => { try { localStorage.removeItem(EP_KEY); localStorage.removeItem(WATCHED_KEY) } catch { /* ignora */ } }
