@@ -9,6 +9,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Descompactar
-        run: unzip -q -o src/projeto.zip && rm src/projeto.zip
+        run: |
+          f=$(ls projeto.zip src/projeto.zip 2>/dev/null | head -n 1)
+          if [ -z "$f" ]; then
+            echo "projeto.zip não encontrado na raiz nem em src"
+            exit 1
+          fi
+          unzip -q -o "$f"
+          rm "$f"
       - name: Salvar
-        run: git config user.name github-actions && git config user.email a@b.c && git add -A && git commit -m "Atualiza projeto" && git push
+        run: |
+          git config user.name github-actions
+          git config user.email a@b.c
+          git add -A
+          git commit -m "Atualiza projeto" || echo "Nada para salvar"
+          git push
