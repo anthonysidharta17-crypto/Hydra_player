@@ -7,7 +7,7 @@ export class HydraError extends Error {
 
 const trimSlash = s => String(s).trim().replace(/\/+$/, '')
 
-export async function xtreamApi({ server, username, password, action, params = {}, signal }) {
+export async function xtreamApi({ server, username, password, action, params = {}, signal, timeoutMs = TIMEOUT_MS }) {
   const url = new URL(`${trimSlash(server)}/player_api.php`)
   url.searchParams.set('username', username)
   url.searchParams.set('password', password)
@@ -17,7 +17,7 @@ export async function xtreamApi({ server, username, password, action, params = {
   // Uma segunda tentativa só para falhas de rede passageiras.
   for (let attempt = 0; attempt < 2; attempt++) {
     const ctrl = new AbortController()
-    const timer = setTimeout(() => ctrl.abort('timeout'), TIMEOUT_MS)
+    const timer = setTimeout(() => ctrl.abort('timeout'), timeoutMs)
     const abortOuter = () => ctrl.abort('outer')
     signal?.addEventListener('abort', abortOuter)
     try {

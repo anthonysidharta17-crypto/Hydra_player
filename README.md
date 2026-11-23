@@ -2,7 +2,7 @@
 
 Player de IPTV em português do Brasil para **conteúdo autorizado** (não fornece canais, filmes nem séries). Entra com usuário e senha de um servidor Xtream Codes.
 
-**Estado: etapa 1 de 5** (estrutura e login). As demais telas aparecem no menu como "chega na etapa N".
+**Estado: etapa 2 de 5** (login, catálogo, categorias, pesquisa, detalhes, Início e Minha lista). Player (etapa 3), Rádio, Catch-up e Minha conta (etapa 4) ainda não existem.
 
 ## Como rodar pelo celular (GitHub)
 1. Suba o conteúdo desta pasta na raiz do repositório (branch `main`).
