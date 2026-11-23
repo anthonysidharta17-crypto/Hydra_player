@@ -1,0 +1,54 @@
+:root {
+  --bg: #080810;
+  --panel: #12121b;
+  --panel-2: #181723;
+  --line: #292735;
+  --text: #f5f2fb;
+  --muted: #9692a2;
+  --purple: #a17aff;
+  --purple-2: #7044d8;
+  --danger: #ff8d9c;
+  font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  color-scheme: dark;
+  text-rendering: optimizeLegibility;
+}
+html { font-size: 16px; }
+html[data-mode='easy'] { font-size: 19px; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: var(--bg); -webkit-tap-highlight-color: transparent; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h1, h2, h3 { font-family: 'Manrope', 'DM Sans', sans-serif; margin: 0; }
+
+/* Foco bem visível: essencial para controle remoto e teclado. */
+:focus { outline: none; }
+:focus-visible { outline: 3px solid var(--purple); outline-offset: 2px; border-radius: 8px; }
+
+.spin { animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.eyebrow { font-size: .6rem; font-weight: 800; letter-spacing: .12em; color: #b89aff; display: inline-flex; align-items: center; gap: .4rem; }
+
+.logo-lockup { display: flex; align-items: center; gap: .65rem; }
+.logo-lockup img { width: 2.6rem; height: 2.6rem; filter: drop-shadow(0 5px 15px #8054df55); }
+.logo-lockup strong { display: block; font: 800 1.3rem 'Manrope', sans-serif; letter-spacing: -.06em; }
+.logo-lockup small { display: block; font-size: .5rem; letter-spacing: .25em; color: #817a90; }
+.logo-lockup.compact img { width: 2.1rem; height: 2.1rem; }
+.logo-lockup.compact strong { font-size: 1.1rem; }
+
+.btn-primary, .btn-outline {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 2.6rem; padding: 0 1rem; border-radius: .6rem; font-size: .75rem; font-weight: 700;
+}
+.btn-primary { border: 0; color: #fff; background: linear-gradient(110deg, #a27aff, #7044d8); box-shadow: 0 8px 28px #7e4be933; }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-primary:disabled { opacity: .65; cursor: wait; }
+.btn-primary.big { width: 100%; min-height: 3rem; font-size: .8rem; margin-top: .5rem; }
+.btn-outline { background: #17151fbd; border: 1px solid #51465f; color: #e0d9eb; }
+.btn-outline:hover { border-color: #8c65d0; }
+.btn-outline.danger { border-color: #653544; color: var(--danger); }
+.btn-outline.compact { min-height: 2.2rem; padding: 0 .75rem; }
+
+.icon-btn { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border: 0; border-radius: .6rem; background: #1f1c29; }

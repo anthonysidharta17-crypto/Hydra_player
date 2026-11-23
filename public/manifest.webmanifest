@@ -1,0 +1,26 @@
+{
+  "name": "Hydra Player",
+  "short_name": "Hydra",
+  "description": "Player premium de mídia para conteúdos autorizados.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080810",
+  "theme_color": "#080810",
+  "icons": [
+    {
+      "src": "logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "categories": [
+    "entertainment",
+    "video"
+  ]
+}

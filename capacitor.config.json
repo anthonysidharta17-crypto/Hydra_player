@@ -1,0 +1,8 @@
+{
+  "appId": "com.hydra.player",
+  "appName": "Hydra Player",
+  "webDir": "dist",
+  "server": { "cleartext": true },
+  "android": { "allowMixedContent": true },
+  "plugins": { "CapacitorHttp": { "enabled": true } }
+}
