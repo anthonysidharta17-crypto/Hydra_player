@@ -7,6 +7,10 @@ export function loadHistory() {
     .map(([id, p]) => ({ id, t: p.t || 0, d: p.d || 0, at: p.at || 0 }))
     .sort((a, b) => b.at - a.at)
 }
+export function getProgress(id) {
+  const p = read()[id]
+  return p ? { t: p.t || 0, d: p.d || 0 } : null
+}
 export function saveProgress(id, time, duration) {
   const map = read()
   map[id] = { t: Math.floor(time), d: Math.floor(duration || 0), at: Date.now() }

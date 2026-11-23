@@ -1,6 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { Component, Suspense, createContext, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { loadCatalog } from '../core/catalog'
 import { loadFavorites, saveFavorites, snapshot } from '../core/favorites'
+
+// O player (hls.js, mpegts.js, dashjs) só é baixado na primeira vez que alguém aperta play.
+const Player = lazy(() => import('../player/Player'))
 
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
@@ -9,7 +12,17 @@ const TYPES = ['live', 'movie', 'series']
 const ROUTE_OF = { movie: 'filmes', series: 'series' }
 const EMPTY_VIEW = { tab: 'all', group: null }
 
-// Estado compartilhado: catálogo, favoritos, aviso rápido e abertura de itens.
+// Se o player quebrar, o app continua de pé.
+class PlayerBoundary extends Component {
+  state = { failed: false }
+  static getDerivedStateFromError() { return { failed: true } }
+  componentDidCatch() { this.props.onFail() }
+  render() { return this.state.failed ? null : this.props.children }
+}
+
+const bootStyle = { position: 'fixed', inset: 0, zIndex: 1000, background: '#000', color: '#fff', display: 'grid', placeItems: 'center' }
+
+// Estado compartilhado: catálogo, favoritos, aviso rápido, abertura de itens e player.
 export function AppProvider({ creds, navigate, children }) {
   const [catalog, setCatalog] = useState({ live: null, movie: null, series: null })
   const [status, setStatus] = useState({ live: 'loading', movie: 'loading', series: 'loading' })
@@ -17,6 +30,7 @@ export function AppProvider({ creds, navigate, children }) {
   const [favorites, setFavorites] = useState(loadFavorites)
   const [views, setViews] = useState({ live: EMPTY_VIEW, movie: EMPTY_VIEW, series: EMPTY_VIEW })
   const [toast, setToast] = useState('')
+  const [player, setPlayer] = useState(null)
   const toastTimer = useRef(0)
 
   const load = useCallback(async type => {
@@ -53,8 +67,17 @@ export function AppProvider({ creds, navigate, children }) {
     return catalog[type]?.byId.get(id) || favorites.find(f => f.id === id) || null
   }, [catalog, favorites])
 
-  // O player chega na etapa 3; por enquanto só avisa.
-  const play = useCallback(() => showToast('O player chega na etapa 3.'), [showToast])
+  // Abre o player. Em séries, o segundo argumento pode trazer o episódio escolhido ({ episodeId } ou { id }).
+  const play = useCallback((item, opts) => {
+    if (!item) return
+    const episodeId = opts && typeof opts === 'object' ? (opts.episodeId ?? opts.id ?? null) : null
+    setPlayer({ item, episodeId, key: Date.now() })
+  }, [])
+  const closePlayer = useCallback(() => setPlayer(null), [])
+  const failPlayer = useCallback(() => {
+    setPlayer(null)
+    showToast('Não foi possível abrir o player. Tente de novo.')
+  }, [showToast])
 
   const openItem = useCallback(item => {
     if (item.type === 'live') return play(item)
@@ -65,12 +88,19 @@ export function AppProvider({ creds, navigate, children }) {
 
   const value = useMemo(() => ({
     creds, catalog, status, errors, reload: load, favorites, favoriteIds, toggleFavorite,
-    getItem, openItem, play, navigate, views, setView, showToast
-  }), [creds, catalog, status, errors, load, favorites, favoriteIds, toggleFavorite, getItem, openItem, play, navigate, views, setView, showToast])
+    getItem, openItem, play, closePlayer, navigate, views, setView, showToast
+  }), [creds, catalog, status, errors, load, favorites, favoriteIds, toggleFavorite, getItem, openItem, play, closePlayer, navigate, views, setView, showToast])
 
   return (
     <Ctx.Provider value={value}>
       {children}
+      {player && (
+        <PlayerBoundary key={player.key} onFail={failPlayer}>
+          <Suspense fallback={<div style={bootStyle}>Carregando player…</div>}>
+            <Player request={player} creds={creds} onClose={closePlayer} showToast={showToast} />
+          </Suspense>
+        </PlayerBoundary>
+      )}
       {toast && <div className="toast" role="status">{toast}</div>}
     </Ctx.Provider>
   )
