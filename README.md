@@ -1,32 +1,47 @@
-# Hydra Player
+# Hydra Player — pacote de projeto
 
-Player de IPTV em português do Brasil para **conteúdo autorizado** (não fornece canais, filmes nem séries). Entra com usuário e senha de um servidor Xtream Codes.
+Projeto React + Vite para reprodução de conteúdos fornecidos por um servidor Xtream autorizado. O aplicativo não fornece canais, filmes ou séries.
 
-**Estado: etapa 2 de 5** (login, catálogo, categorias, pesquisa, detalhes, Início e Minha lista). Player (etapa 3), Rádio, Catch-up e Minha conta (etapa 4) ainda não existem.
+## Recursos incluídos neste pacote
+- Login Xtream e armazenamento local de sessão conforme preferência.
+- Catálogo de TV ao vivo, filmes e séries, categorias, pesquisa e favoritos.
+- Detalhes de filmes/séries, temporadas e episódios.
+- Player com tentativas de formatos HLS, MPEG-TS/FLV, DASH e reprodução nativa conforme suporte do navegador/aparelho.
+- Controles de reprodução, áudio/legendas quando expostos pelo stream, legenda externa SRT/VTT, tela cheia e suporte a teclado/controle remoto.
+- Histórico e retomada de reprodução, preferências do player.
+- Telas de Rádio (com favoritos), Catch-up, Minha conta (atualiza os dados do servidor), suporte Hydra e histórico, com disponibilidade condicionada ao que o provedor Xtream oferece.
+- Configurações de reprodução ligadas ao player (áudio, legenda, retomar, salto, próximo episódio).
+- Splash com três cabeças da Hidra animadas. O arquivo original `public/logo.svg` foi preservado.
 
-## Como rodar pelo celular (GitHub)
-1. Suba o conteúdo desta pasta na raiz do repositório (branch `main`).
-2. **Site:** em Settings → Pages, escolha "GitHub Actions". O workflow *Publicar site* roda a cada push.
-3. **APK:** aba Actions → *Gerar APK (Android)* → Run workflow. O APK aparece em Releases.
+## Instalar e executar
+Requer Node.js 20 ou superior.
 
-## Servidor
-Fica numa constante em `src/config.js` (`SERVER`). Troque só essa linha.
-
-## Regras do login
-- Usuário e senha ficam gravados no aparelho até a pessoa trocar ou esquecer (Configurações).
-- "Sair" não apaga o acesso: os campos voltam preenchidos e o app não entra sozinho.
-- Nenhum erro (rede, senha recusada, assinatura vencida) apaga o acesso salvo.
-- Desmarcar "Manter meu acesso salvo" faz o app não gravar a senha.
-- URLs do Xtream (que carregam usuário e senha) nunca são gravadas.
-
-## Estrutura
+```bash
+npm install
+npm run dev
+npm run build
 ```
-src/
-  config.js        servidor e versão
-  routes.js        itens do menu
-  core/            storage.js, xtream.js (e, nas próximas etapas, m3u, epg, ia…)
-  hooks/           useAuth, usePrefs, useRoute, useDpad (setas/controle remoto)
-  components/      Logo, Splash, Shell
-  screens/         Login, Settings, Placeholder (uma tela por arquivo)
-  styles/          base.css, auth.css, shell.css
-```
+
+## Gerar o APK (pelo celular)
+1. GitHub → Actions → **Gerar APK** → Run workflow.
+2. Quando terminar, o APK aparece em **Releases** (`Hydra-Player.apk`).
+3. O APK usa a chave fixa `signing/hydra-debug.keystore` (de debug, não é segredo). Por isso um APK novo instala por cima do anterior, sem desinstalar. Só o primeiro APK desta versão exige desinstalar o antigo.
+
+O site (GitHub Pages) só publica se você rodar **Publicar site** manualmente; o app é o APK.
+
+## Configuração
+Confira `src/config.js` para o endereço do servidor configurado. As credenciais são informadas pelo usuário no login. Não coloque senhas nem chaves privadas no código.
+
+## Ainda não incluído
+Abrir em VLC/MX Player por intent nativo, importar listas M3U, backup/restauração e atualização de EPG.
+
+## Limitações importantes
+- Rádio depende de streams de rádio presentes no provedor. A tela não cria estações que o servidor não forneça.
+- Catch-up depende de `tv_archive` e suporte de timeshift compatível no servidor; nem todos os provedores implementam o mesmo formato.
+- Sinopses vêm dos metadados entregues pelo servidor. Integração externa TMDB/API e chave de servidor não estão configuradas neste pacote; títulos sem sinopse podem continuar sem sinopse.
+- O suporte Hydra presente é um assistente local baseado em regras/diagnóstico, não um serviço de IA remoto com backend.
+- Reprodução varia por codec, CORS, protocolo, dispositivo e permissões do provedor. Build web/APK bem-sucedido não garante reprodução de todos os streams.
+- O projeto é uma aplicação web empacotada para Android; navegação em Android TV/TV Box precisa ser validada em hardware real.
+
+## Testes
+`npm run build` valida compilação e resolução de módulos. Teste de reprodução real exige credenciais válidas e streams autorizados de teste.

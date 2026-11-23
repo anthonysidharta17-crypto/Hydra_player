@@ -4,6 +4,7 @@ import {
   Settings, ExternalLink, AlertTriangle, Loader2, Languages, List
 } from 'lucide-react'
 import { callApi } from '../core/api'
+import { SERVER } from '../config'
 import { mediaUrl } from '../core/xtream'
 import { saveProgress, getProgress } from '../core/history'
 import { loadPrefs, savePrefs, getLastEpisode, setLastEpisode } from '../core/playerPrefs'
@@ -112,6 +113,7 @@ export default function Player({ request, creds, onClose, showToast }) {
 
   const episode = useMemo(() => episodes.find(e => e.id === epId) || null, [episodes, epId])
   const source = useMemo(() => {
+    if (request.streamUrl) return { kind: 'catchup', id: item.sid, ext: 'ts', key: `catchup-${item.id}`, sub: 'Gravação de programa', directUrl: request.streamUrl }
     if (item.type === 'series') {
       if (!episode) return null
       return {
@@ -120,10 +122,10 @@ export default function Player({ request, creds, onClose, showToast }) {
       }
     }
     return { kind: item.type, id: item.sid, ext: item.ext || (item.type === 'live' ? '' : 'mp4'), key: item.id, sub: '' }
-  }, [item, episode])
+  }, [item, episode, request.streamUrl])
   const sourceRef = useRef(null)
   sourceRef.current = source
-  const candidates = useMemo(() => (source ? planFormats(source.kind, source.ext, device) : []), [source, device])
+  const candidates = useMemo(() => (source ? (source.directUrl ? [{ ext: source.ext || 'ts', swap: false }] : planFormats(source.kind, source.ext, device)) : []), [source, device])
 
   const epIndex = episodes.findIndex(e => e.id === epId)
   const nextEp = epIndex >= 0 ? episodes[epIndex + 1] : null
@@ -319,7 +321,7 @@ export default function Player({ request, creds, onClose, showToast }) {
         setNote(i > 0 ? `Tentando outro formato (${i + 1} de ${candidates.length})…` : '')
         const cand = candidates[i]
         const c = credsRef.current
-        const url = mediaUrl(cand.swap ? { ...c, server: swapProtocol(c.server) } : c, source.kind, source.id, cand.ext)
+        const url = source.directUrl || mediaUrl(cand.swap ? { ...c, server: swapProtocol(c.server || SERVER) } : c, source.kind, source.id, cand.ext)
         current = startAttempt(video, {
           url, ext: cand.ext, kind: source.kind, profile,
           timeoutMs: source.kind === 'live' ? 15000 : 25000,
@@ -394,7 +396,7 @@ export default function Player({ request, creds, onClose, showToast }) {
   const openExternal = useCallback(() => {
     const s = sourceRef.current
     if (!s || !candidates.length) return
-    const url = mediaUrl(credsRef.current, s.kind, s.id, candidates[0].ext)
+    const url = s.directUrl || mediaUrl({ ...credsRef.current, server: SERVER }, s.kind, s.id, candidates[0].ext)
     const w = window.open(url, '_blank')
     if (!w && navigator.clipboard) {
       navigator.clipboard.writeText(url)

@@ -1,28 +1,19 @@
 import { Component, Suspense, createContext, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { loadCatalog } from '../core/catalog'
 import { loadFavorites, saveFavorites, snapshot } from '../core/favorites'
-
-// O player (hls.js, mpegts.js, dashjs) só é baixado na primeira vez que alguém aperta play.
 const Player = lazy(() => import('../player/Player'))
-
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
-
 const TYPES = ['live', 'movie', 'series']
 const ROUTE_OF = { movie: 'filmes', series: 'series' }
 const EMPTY_VIEW = { tab: 'all', group: null }
-
-// Se o player quebrar, o app continua de pé.
 class PlayerBoundary extends Component {
   state = { failed: false }
   static getDerivedStateFromError() { return { failed: true } }
   componentDidCatch() { this.props.onFail() }
   render() { return this.state.failed ? null : this.props.children }
 }
-
 const bootStyle = { position: 'fixed', inset: 0, zIndex: 1000, background: '#000', color: '#fff', display: 'grid', placeItems: 'center' }
-
-// Estado compartilhado: catálogo, favoritos, aviso rápido, abertura de itens e player.
 export function AppProvider({ creds, navigate, children }) {
   const [catalog, setCatalog] = useState({ live: null, movie: null, series: null })
   const [status, setStatus] = useState({ live: 'loading', movie: 'loading', series: 'loading' })
@@ -32,76 +23,51 @@ export function AppProvider({ creds, navigate, children }) {
   const [toast, setToast] = useState('')
   const [player, setPlayer] = useState(null)
   const toastTimer = useRef(0)
-
   const load = useCallback(async type => {
     setStatus(s => ({ ...s, [type]: 'loading' }))
+    setErrors(e => ({ ...e, [type]: '' }))
     try {
       const data = await loadCatalog(creds, type)
       setCatalog(c => ({ ...c, [type]: data }))
       setStatus(s => ({ ...s, [type]: 'ready' }))
     } catch (err) {
-      setErrors(e => ({ ...e, [type]: err.message }))
+      setErrors(e => ({ ...e, [type]: err.message || 'Falha ao carregar.' }))
       setStatus(s => ({ ...s, [type]: 'error' }))
     }
   }, [creds])
-
   useEffect(() => { TYPES.forEach(load) }, [load])
-
+  const reloadAll = useCallback(() => TYPES.forEach(load), [load])
   const showToast = useCallback(message => {
-    setToast(message)
-    clearTimeout(toastTimer.current)
+    setToast(message); clearTimeout(toastTimer.current)
     toastTimer.current = setTimeout(() => setToast(''), 2800)
   }, [])
-
+  useEffect(() => () => clearTimeout(toastTimer.current), [])
   const favoriteIds = useMemo(() => new Set(favorites.map(f => f.id)), [favorites])
-  const toggleFavorite = useCallback(item => {
-    setFavorites(list => {
-      const next = list.some(f => f.id === item.id) ? list.filter(f => f.id !== item.id) : [snapshot(item), ...list]
-      saveFavorites(next)
-      return next
-    })
-  }, [])
-
+  const toggleFavorite = useCallback(item => setFavorites(list => {
+    const next = list.some(f => f.id === item.id) ? list.filter(f => f.id !== item.id) : [snapshot(item), ...list]
+    saveFavorites(next); return next
+  }), [])
   const getItem = useCallback(id => {
     const type = String(id).split('-')[0]
     return catalog[type]?.byId.get(id) || favorites.find(f => f.id === id) || null
   }, [catalog, favorites])
-
-  // Abre o player. Em séries, o segundo argumento pode trazer o episódio escolhido ({ episodeId } ou { id }).
-  const play = useCallback((item, opts) => {
+  const play = useCallback((item, opts = {}) => {
     if (!item) return
     const episodeId = opts && typeof opts === 'object' ? (opts.episodeId ?? opts.id ?? null) : null
-    setPlayer({ item, episodeId, key: Date.now() })
+    const streamUrl = opts && typeof opts === 'object' ? (opts.streamUrl || null) : null
+    setPlayer({ item, episodeId, streamUrl, key: Date.now() })
   }, [])
   const closePlayer = useCallback(() => setPlayer(null), [])
-  const failPlayer = useCallback(() => {
-    setPlayer(null)
-    showToast('Não foi possível abrir o player. Tente de novo.')
-  }, [showToast])
-
-  const openItem = useCallback(item => {
-    if (item.type === 'live') return play(item)
-    navigate(ROUTE_OF[item.type], item.id)
-  }, [navigate, play])
-
+  const failPlayer = useCallback(() => { setPlayer(null); showToast('Não foi possível abrir o player. Tente novamente.') }, [showToast])
+  const openItem = useCallback(item => { if (item.type === 'live') return play(item); navigate(ROUTE_OF[item.type], item.id) }, [navigate, play])
   const setView = useCallback((type, patch) => setViews(v => ({ ...v, [type]: { ...v[type], ...patch } })), [])
-
-  const value = useMemo(() => ({
-    creds, catalog, status, errors, reload: load, favorites, favoriteIds, toggleFavorite,
-    getItem, openItem, play, closePlayer, navigate, views, setView, showToast
-  }), [creds, catalog, status, errors, load, favorites, favoriteIds, toggleFavorite, getItem, openItem, play, closePlayer, navigate, views, setView, showToast])
-
-  return (
-    <Ctx.Provider value={value}>
-      {children}
-      {player && (
-        <PlayerBoundary key={player.key} onFail={failPlayer}>
-          <Suspense fallback={<div style={bootStyle}>Carregando player…</div>}>
-            <Player request={player} creds={creds} onClose={closePlayer} showToast={showToast} />
-          </Suspense>
-        </PlayerBoundary>
-      )}
-      {toast && <div className="toast" role="status">{toast}</div>}
-    </Ctx.Provider>
-  )
+  const value = useMemo(() => ({ creds, catalog, status, errors, reload: load, reloadAll, favorites, favoriteIds, toggleFavorite, getItem, openItem, play, closePlayer, navigate, views, setView, showToast }),
+    [creds, catalog, status, errors, load, reloadAll, favorites, favoriteIds, toggleFavorite, getItem, openItem, play, closePlayer, navigate, views, setView, showToast])
+  return <Ctx.Provider value={value}>
+    {children}
+    {player && <PlayerBoundary key={player.key} onFail={failPlayer}><Suspense fallback={<div style={bootStyle}>Carregando player…</div>}>
+      <Player request={player} creds={creds} onClose={closePlayer} showToast={showToast} />
+    </Suspense></PlayerBoundary>}
+    {toast && <div className="toast" role="status">{toast}</div>}
+  </Ctx.Provider>
 }

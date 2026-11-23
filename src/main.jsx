@@ -5,7 +5,4 @@ import './styles/base.css'
 import './styles/auth.css'
 import './styles/shell.css'
 import './styles/catalog.css'
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode><App /></React.StrictMode>
-)
+ReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>)
