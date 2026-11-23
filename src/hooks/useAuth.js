@@ -49,7 +49,7 @@ export function useAuth() {
       if (result) { setSession({ creds: saved, account: result.account, serverInfo: result.serverInfo }); setPhase('ready') }
       else if (saved) { setNotice(error); setPhase('login') }
       else if (pending) { setRegistration(pending); setPhase('pending') }
-      else setPhase('request')
+      else setPhase('welcome')
     })()
     return () => { cancelled = true }
   }, [])
@@ -74,8 +74,9 @@ export function useAuth() {
   }, [])
   const logout = useCallback(() => { saveLoginState({ ...loadLoginState(), auto: false }); setFields(initialFields()); setSession(null); setNotice(''); setPhase('login') }, [])
   const switchLogin = useCallback(() => { saveLoginState({ ...loadLoginState(), auto: false }); setFields({ username: '', password: '', remember: true }); setSession(null); setNotice(''); setPhase('login') }, [])
-  const forget = useCallback(() => { forgetCredentials(); clearRegistration(); setRegistration(null); setFields({ username: '', password: '', remember: true }); setSession(null); setNotice('Acesso esquecido neste aparelho.'); setPhase('request') }, [])
-  const resetRegistration = useCallback(() => { clearRegistration(); setRegistration(null); setNotice(''); setPhase('request') }, [])
+  const forget = useCallback(() => { forgetCredentials(); clearRegistration(); setRegistration(null); setFields({ username: '', password: '', remember: true }); setSession(null); setNotice('Acesso esquecido neste aparelho.'); setPhase('welcome') }, [])
+  const resetRegistration = useCallback(() => { clearRegistration(); setRegistration(null); setNotice(''); setPhase('welcome') }, [])
   const showRequest = useCallback(() => { setNotice(''); setPhase('request') }, [])
-  return { phase, session, fields, notice, registration, login, logout, switchLogin, forget, requestAccess, refreshRegistration, resetRegistration, showRequest }
+  const showLogin = useCallback(() => { setNotice(''); setFields(initialFields()); setPhase('login') }, [])
+  return { phase, session, fields, notice, registration, login, logout, switchLogin, forget, requestAccess, refreshRegistration, resetRegistration, showRequest, showLogin }
 }

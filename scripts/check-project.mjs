@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 const required = [
   'index.html','package.json','src/App.jsx','src/config.js','src/core/xtream.js',
   'src/player/Player.jsx','src/player/engine.js','src/core/registration.js','src/hooks/useAuth.js',
-  'src/screens/AccessRequest.jsx','src/screens/PendingAccess.jsx','src/components/Splash.jsx',
+  'src/screens/AccessRequest.jsx','src/screens/Welcome.jsx','src/screens/PendingAccess.jsx','src/components/Splash.jsx',
   'src/screens/Radio.jsx','src/screens/Catchup.jsx','src/screens/Account.jsx',
   'src/screens/Support.jsx','public/logo.svg','admin/index.html','public/admin/index.html','docs/APP_UPDATE.md'
 ]
