@@ -11,8 +11,8 @@ async function request(path, options = {}) {
   if (!response.ok) throw new Error(data.error || `Falha de comunicação (${response.status}).`)
   return data
 }
-export async function createRegistration({ name, contact }) {
-  const data = await request('/api/register', { method: 'POST', body: JSON.stringify({ name, contact }) })
+export async function createRegistration({ name, contact, app_user, app_password }) {
+  const data = await request('/api/register', { method: 'POST', body: JSON.stringify({ name, contact, app_user, app_password }) })
   const registration = { id: data.id, token: data.token, name, contact }
   saveRegistration(registration)
   return registration

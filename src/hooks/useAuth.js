@@ -1,11 +1,32 @@
 import { useCallback, useEffect, useState } from 'react'
-import { SERVER } from '../config'
+import { SERVER, CONTROL_API } from '../config'
 import { xtreamLogin } from '../core/xtream'
 import { loadCredentials, saveCredentials, forgetCredentials, loadLoginState, saveLoginState } from '../core/storage'
 import { loadRegistration, createRegistration, checkRegistration, clearRegistration } from '../core/registration'
 const MIN_SPLASH_MS = 900
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
-const initialFields = () => ({ username: loadCredentials()?.username || '', password: loadCredentials()?.password || '', remember: loadLoginState().remember })
+const API = (CONTROL_API || '').replace(/\/+$/, '')
+const APP_LOGIN_KEY = 'hydra_app_login'
+const loadAppLogin = () => { try { return localStorage.getItem(APP_LOGIN_KEY) || '' } catch { return '' } }
+const saveAppLogin = value => { try { localStorage.setItem(APP_LOGIN_KEY, value) } catch {} }
+const forgetAppLogin = () => { try { localStorage.removeItem(APP_LOGIN_KEY) } catch {} }
+const initialFields = () => ({ username: loadAppLogin(), password: '', remember: loadLoginState().remember })
+
+async function appLogin(app_user, app_password) {
+  if (!API) throw new Error('O serviço de acesso ainda não foi configurado neste aplicativo.')
+  let res
+  try {
+    res = await fetch(API + '/api/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ app_user, app_password }),
+    })
+  } catch { throw new Error('Sem conexão com o servidor. Verifique sua internet.') }
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'Não foi possível entrar.')
+  return data
+}
+
 export function useAuth() {
   const [phase, setPhase] = useState('boot')
   const [session, setSession] = useState(null)
@@ -62,19 +83,30 @@ export function useAuth() {
 
   const requestAccess = useCallback(async details => {
     const created = await createRegistration(details)
+    if (details.app_user) saveAppLogin(details.app_user)
     setRegistration(created); setNotice(''); setPhase('pending')
   }, [])
+
   const login = useCallback(async ({ username, password, remember }) => {
-    const result = await xtreamLogin({ server: SERVER, username, password })
-    if (remember) { saveCredentials({ username, password }); saveLoginState({ remember: true, auto: true }) }
-    else { forgetCredentials(); saveLoginState({ remember: false, auto: false }) }
+    const user = username.trim().toLowerCase()
+    const data = await appLogin(user, password)
+    if (data.status === 'pending') throw new Error('Seu cadastro ainda está aguardando liberação da administração.')
+    if (data.status !== 'active' || !data.credentials?.username || !data.credentials?.password)
+      throw new Error('Seu acesso não está liberado. Fale com a administração.')
+    const x = { username: data.credentials.username, password: data.credentials.password }
+    let result
+    try { result = await xtreamLogin({ server: SERVER, username: x.username, password: x.password }) }
+    catch (error) { throw new Error(`Seu acesso foi liberado, mas não foi possível validar no servidor: ${error.message}`) }
+    if (remember) { saveCredentials(x); saveLoginState({ remember: true, auto: true }); saveAppLogin(user) }
+    else { forgetCredentials(); forgetAppLogin(); saveLoginState({ remember: false, auto: false }) }
     clearRegistration(); setRegistration(null)
-    setSession({ creds: { username, password }, account: result.account, serverInfo: result.serverInfo })
+    setSession({ creds: x, account: result.account, serverInfo: result.serverInfo })
     setNotice(''); setPhase('ready')
   }, [])
+
   const logout = useCallback(() => { saveLoginState({ ...loadLoginState(), auto: false }); setFields(initialFields()); setSession(null); setNotice(''); setPhase('login') }, [])
   const switchLogin = useCallback(() => { saveLoginState({ ...loadLoginState(), auto: false }); setFields({ username: '', password: '', remember: true }); setSession(null); setNotice(''); setPhase('login') }, [])
-  const forget = useCallback(() => { forgetCredentials(); clearRegistration(); setRegistration(null); setFields({ username: '', password: '', remember: true }); setSession(null); setNotice('Acesso esquecido neste aparelho.'); setPhase('welcome') }, [])
+  const forget = useCallback(() => { forgetCredentials(); forgetAppLogin(); clearRegistration(); setRegistration(null); setFields({ username: '', password: '', remember: true }); setSession(null); setNotice('Acesso esquecido neste aparelho.'); setPhase('welcome') }, [])
   const resetRegistration = useCallback(() => { clearRegistration(); setRegistration(null); setNotice(''); setPhase('welcome') }, [])
   const showRequest = useCallback(() => { setNotice(''); setPhase('request') }, [])
   const showLogin = useCallback(() => { setNotice(''); setFields(initialFields()); setPhase('login') }, [])
