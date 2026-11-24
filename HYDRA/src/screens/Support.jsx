@@ -13,10 +13,13 @@ function answerFor(question,status,online) {
   if(/cat[aá]logo|canal|filme|s[eé]rie|lista/.test(q)) return 'Vou conferir o estado do catálogo. Use “Atualizar catálogo” abaixo. Se continuar vazio, o servidor pode estar sem resposta ou não disponibilizar aquela categoria.'
   if(/catch.?up|grava|programa/.test(q)) return 'O Catch-up depende de o seu provedor habilitar TV Archive e entregar os dados de gravação/EPG. Se o canal não aparecer na lista, esse recurso não está liberado para ele.'
   if(/r[aá]dio/.test(q)) return 'A seção Rádio filtra os canais cujo nome ou categoria indicam rádio, FM, música ou estações. O servidor precisa incluir essas estações no catálogo.'
-  return 'Posso verificar rede, estado do catálogo e compatibilidade do aparelho, além de orientar sobre reprodução, login, rádio e Catch-up. Conte qual tela você estava usando e qual mensagem apareceu — sem enviar senha ou endereço privado do stream.'
+  if(/favorit|minha lista/.test(q)) return 'Abra Minha Lista para ver os títulos que você marcou como favoritos. Para adicionar um título, abra os detalhes e use a opção de adicionar à lista, quando disponível.'
+  if(/pesquis/.test(q)) return 'Use a lupa ou a seção Pesquisa e digite o nome do canal, filme ou série. Se não encontrar, confira a grafia ou se o conteúdo existe no catálogo enviado pelo provedor.'
+  if(/tutorial|como usar|começar/.test(q)) return 'Abra Configurações e toque em “Abrir tutorial”. Ele explica TV ao vivo, filmes, séries, pesquisa, favoritos, histórico, configurações e ajuda.'
+  return 'Posso verificar rede, estado do catálogo e compatibilidade do aparelho, além de orientar sobre TV ao vivo, filmes, séries, pesquisa, favoritos, histórico, rádio e Catch-up. Diga em qual tela estava e qual mensagem apareceu — sem enviar senha ou endereço privado do stream.'
 }
 export default function Support() {
-  const {status,reloadAll,showToast} = useApp(), [input,setInput]=useState(''),[messages,setMessages]=useState([{by:'bot',text:'Olá! Sou o suporte Hydra. Posso fazer verificações locais e orientar os próximos passos. Não consigo corrigir uma queda do servidor do provedor nem validar conteúdo que ele não disponibiliza.'}])
+  const {status,reloadAll,showToast} = useApp(), [input,setInput]=useState(''),[messages,setMessages]=useState([{by:'bot',text:'Olá! Sou o suporte do HYDRA. Conheço as áreas do aplicativo, posso verificar o estado do catálogo e os recursos detectados neste aparelho. Minhas orientações são baseadas nas funções disponíveis no app; não vou afirmar que corrigi algo que não consigo testar.'}])
   const online=typeof navigator!=='undefined'?navigator.onLine:false
   const device=useMemo(()=>{try{return detectDevice()}catch{return null}},[])
   const add=(q)=>{const text=q.trim();if(!text)return;setMessages(m=>[...m,{by:'user',text},{by:'bot',text:answerFor(text,status,online)}]);setInput('')}

@@ -34,15 +34,16 @@ Se o nome real do banco for diferente, use o nome real. A migração cria as tab
 
 ## 4. Configurar os segredos
 
-O usuário administrativo inicial é `Adriel123`. Configure a senha inicial fornecida pelo proprietário como segredo. Para a primeira configuração, o valor esperado é `adriel123@`.
+Configure um usuário e uma senha administrativos fortes e exclusivos como segredos `ADMIN_USERNAME` e `ADMIN_PASSWORD`. Não use senha padrão compartilhada.
 
 ```bash
+npx wrangler secret put ADMIN_USERNAME
 npx wrangler secret put ADMIN_PASSWORD
 npx wrangler secret put SESSION_SECRET
 npx wrangler secret put CREDENTIALS_KEY
 ```
 
-- `ADMIN_PASSWORD`: senha administrativa inicial `adriel123@` (recomenda-se alterá-la após o primeiro acesso).
+- `ADMIN_USERNAME` e `ADMIN_PASSWORD`: credenciais privadas do painel administrativo.
 - `SESSION_SECRET`: valor aleatório longo, exclusivo do projeto.
 - `CREDENTIALS_KEY`: outro valor aleatório longo, exclusivo do projeto; não reutilize `SESSION_SECRET`.
 
@@ -85,15 +86,19 @@ Para gerar/atualizar a plataforma Android com Capacitor, use o projeto Android c
 
 Abra `/admin/` na publicação do frontend. Use:
 
-- Usuário: `Adriel123`
-- Senha: valor configurado em `ADMIN_PASSWORD` (inicialmente `adriel123@`)
+- Usuário e senha: valores privados definidos nos segredos `ADMIN_USERNAME` e `ADMIN_PASSWORD`.
 
-Cadastre primeiro um servidor Xtream em **Servidores**. Depois aprove os clientes e associe cada um ao servidor.
+O painel libera login, senha e validade para cada cliente. O host Alfa Fantasma é configurado globalmente no app pela variável `VITE_DEFAULT_XTREAM_SERVER`; não cadastre servidores no painel.
 
 ## Observações importantes
 
 - O painel e o aplicativo usam o mesmo Worker.
 - O cliente só recebe credenciais após aprovação manual.
 - Credenciais Xtream são armazenadas criptografadas no D1.
-- A URL do servidor vem do servidor associado ao cliente, não de uma URL fixa no frontend.
+- O host do Alfa Fantasma é uma configuração global do aplicativo, independente do painel administrativo.
 - O Worker não configura a conta Cloudflare sozinho: login, ID do D1, segredos e publicação precisam ocorrer na conta do proprietário.
+
+
+## Configuração do Alfa Fantasma
+
+Defina `VITE_DEFAULT_XTREAM_SERVER` no ambiente de build do frontend com o endereço-base autorizado do Alfa Fantasma. O painel não armazena nem altera esse endereço.

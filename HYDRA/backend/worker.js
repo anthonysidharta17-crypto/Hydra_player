@@ -74,7 +74,7 @@ async function adminRoutes(request, env, url) {
     return json(row || { total: 0, pending: 0, active: 0, trials: 0 });
   }
   if (path === '/api/admin/customers' && request.method === 'GET') {
-    const { results = [] } = await env.DB.prepare(`SELECT id,name,contact,status,access_type,expires_at,server_id,xtream_username,created_at FROM customers ORDER BY created_at DESC`).all();
+    const { results = [] } = await env.DB.prepare(`SELECT id,name,contact,status,access_type,expires_at,xtream_username,created_at FROM customers ORDER BY created_at DESC`).all();
     return json({ customers: results });
   }
   const customerMatch = path.match(/^\/api\/admin\/customers\/([^/]+)$/);
@@ -85,54 +85,15 @@ async function adminRoutes(request, env, url) {
     if (!current) return fail('Cliente não encontrado.', 404);
     let secret = current.xtream_secret;
     let username = current.xtream_username;
-    let serverId = data.server_id ?? current.server_id;
-    if (data.xtream_password || (!secret && data.xtream_username)) {
-      if (!data.xtream_username || !data.xtream_password) return fail('Informe usuário e senha Xtream.');
-      let server = null;
-      if (serverId) server = await env.DB.prepare('SELECT id,base_url FROM servers WHERE id=? AND status=\'active\'').bind(serverId).first();
-      if (!server) server = await env.DB.prepare("SELECT id,base_url FROM servers WHERE status='active' ORDER BY priority ASC, created_at ASC LIMIT 1").first();
-      if (!server) return fail('Cadastre e ative pelo menos um servidor antes de liberar clientes.');
-      serverId = server.id;
-      username = data.xtream_username.trim();
-      secret = await encrypt(env, { username, password: data.xtream_password, server: server.base_url });
-    } else if (data.server_id && secret) {
-      const server = await env.DB.prepare("SELECT id,base_url FROM servers WHERE id=? AND status='active'").bind(serverId).first();
-      if (!server) return fail('Servidor não encontrado ou inativo.');
-      const old = await decrypt(env, secret);
-      secret = await encrypt(env, { ...old, server: server.base_url });
+    if (data.client_password || (!secret && data.client_username)) {
+      if (!data.client_username || !data.client_password) return fail('Informe login e senha do cliente.');
+      username = String(data.client_username).trim();
+      secret = await encrypt(env, { username, password: String(data.client_password) });
     }
-    if (data.status === 'active' && !secret) return fail('Informe as credenciais Xtream para liberar este cliente.');
-    await env.DB.prepare(`UPDATE customers SET status=?, access_type=?, expires_at=?, server_id=?, xtream_username=?, xtream_secret=?, updated_at=? WHERE id=?`)
-      .bind(data.status || current.status, data.access_type ? (data.access_type === 'trial' ? 'trial' : 'regular') : current.access_type, data.expires_at === undefined ? current.expires_at : (data.expires_at || null), serverId, username, secret, now(), id).run();
+    if (data.status === 'active' && !secret) return fail('Informe o login e a senha do cliente para liberar o acesso.');
+    await env.DB.prepare(`UPDATE customers SET status=?, access_type=?, expires_at=?, xtream_username=?, xtream_secret=?, updated_at=? WHERE id=?`)
+      .bind(data.status || current.status, data.access_type ? (data.access_type === 'trial' ? 'trial' : 'regular') : current.access_type, data.expires_at === undefined ? current.expires_at : (data.expires_at || null), username, secret, now(), id).run();
     await env.DB.prepare('INSERT INTO audit_logs (id,admin_id,action,target_id,created_at) VALUES (?,?,?,?,?)').bind(crypto.randomUUID(), 'admin', 'customer_update', id, now()).run();
-    return json({ ok: true });
-  }
-  if (path === '/api/admin/servers' && request.method === 'GET') {
-    const { results = [] } = await env.DB.prepare('SELECT id,name,base_url,status,priority,created_at FROM servers ORDER BY priority ASC, created_at ASC').all();
-    return json({ servers: results });
-  }
-  if (path === '/api/admin/servers' && request.method === 'POST') {
-    const data = await body(request);
-    if (!data?.name || !data?.base_url || !/^https?:\/\//i.test(data.base_url)) return fail('Informe nome e endereço HTTP(S) válido do servidor.');
-    const id = crypto.randomUUID();
-    await env.DB.prepare('INSERT INTO servers(id,name,base_url,status,priority,created_at) VALUES(?,?,?,?,?,?)').bind(id, data.name.trim(), data.base_url.trim().replace(/\/+$/, ''), data.status === 'inactive' ? 'inactive' : 'active', Number(data.priority) || 1, now()).run();
-    return json({ id, ok: true }, 201);
-  }
-  const serverMatch = path.match(/^\/api\/admin\/servers\/([^/]+)$/);
-  if (serverMatch && request.method === 'PATCH') {
-    const data = await body(request), id = serverMatch[1];
-    const current = await env.DB.prepare('SELECT * FROM servers WHERE id=?').bind(id).first();
-    if (!current) return fail('Servidor não encontrado.', 404);
-    const name = data.name ?? current.name, base = data.base_url ?? current.base_url, status = data.status ?? current.status;
-    if (!/^https?:\/\//i.test(base) || !['active','inactive'].includes(status)) return fail('Dados de servidor inválidos.');
-    await env.DB.prepare('UPDATE servers SET name=?,base_url=?,status=?,priority=? WHERE id=?').bind(name, base.replace(/\/+$/, ''), status, Number(data.priority ?? current.priority), id).run();
-    return json({ ok: true });
-  }
-  if (serverMatch && request.method === 'DELETE') {
-    const id = serverMatch[1];
-    const used = await env.DB.prepare('SELECT COUNT(*) n FROM customers WHERE server_id=?').bind(id).first();
-    if (used?.n) return fail('Este servidor está associado a clientes. Reatribua os clientes antes de removê-lo.', 409);
-    await env.DB.prepare('DELETE FROM servers WHERE id=?').bind(id).run();
     return json({ ok: true });
   }
   return fail('Rota administrativa não encontrada.', 404);
@@ -156,7 +117,7 @@ export default {
         if (row.expires_at && new Date(row.expires_at + 'T23:59:59').getTime() < Date.now()) return fail('Este acesso expirou.', 403, headers);
         const credentials = await decrypt(env, row.xtream_secret);
         if (!safeEqual(credentials.password, password)) return fail('Usuário ou senha incorretos.', 401, headers);
-        return json({ credentials: { username: credentials.username, password: credentials.password, server: credentials.server } }, 200, headers);
+        return json({ credentials: { username: credentials.username, password: credentials.password } }, 200, headers);
       }
       if (path === '/api/register' && request.method === 'POST') {
         const data = await body(request);
