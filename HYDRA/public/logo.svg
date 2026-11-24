@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<defs>
+<radialGradient id="bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#1a1033"/><stop offset="1" stop-color="#080810"/></radialGradient>
+<linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c58bff"/><stop offset="1" stop-color="#6d28d9"/></linearGradient>
+<radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#a855f7" stop-opacity=".55"/><stop offset="1" stop-color="#a855f7" stop-opacity="0"/></radialGradient>
+<g id="head"><path d="M-46,-32 C0,-50 56,-34 86,0 C56,34 0,50 -46,32 C-64,12 -64,-12 -46,-32Z" fill="url(#p)"/><path d="M30,-16 L50,-34 L52,-12Z M-10,-24 L0,-44 L12,-24Z" fill="#8b3dff"/><path d="M52,10 L60,28 L68,8Z" fill="#f5eaff"/><ellipse cx="14" cy="-8" rx="9" ry="6" fill="#fff"/><circle cx="16" cy="-8" r="3.5" fill="#1a0033"/></g>
+</defs><rect width="1024" height="1024" fill="url(#bg)"/><circle cx="512" cy="430" r="400" fill="url(#glow)"/>
+<g fill="none" stroke="url(#p)" stroke-linecap="round" stroke-width="64"><path d="M470,680 C400,610 330,540 340,420 C345,350 330,310 322,282"/><path d="M554,680 C624,610 694,540 684,420 C679,350 694,310 702,282"/><path d="M512,690 C512,570 520,430 512,306" stroke-width="72"/></g>
+<path d="M300,700 C380,630 644,630 724,700 C760,730 740,760 700,760 L324,760 C284,760 264,730 300,700Z" fill="#5b21b6"/>
+<use href="#head" transform="translate(318,262) rotate(-125)"/><use href="#head" transform="translate(706,262) rotate(-55)"/><use href="#head" transform="translate(512,242) rotate(-90) scale(1.12)"/>
+<text x="512" y="850" text-anchor="middle" font-family="Montserrat,Poppins,DejaVu Sans,Arial,sans-serif" font-weight="800" font-size="104" letter-spacing="6" fill="#fff">HYDRA PLAYER</text><text x="512" y="915" text-anchor="middle" font-family="Montserrat,Poppins,DejaVu Sans,Arial,sans-serif" font-weight="600" font-size="40" letter-spacing="18" fill="#c58bff">OFICIAL</text></svg>

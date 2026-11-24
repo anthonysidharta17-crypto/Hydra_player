@@ -1,0 +1,14 @@
+name = "hydra-api"
+main = "backend/worker.js"
+compatibility_date = "2026-11-24"
+workers_dev = true
+
+[vars]
+ADMIN_USERNAME = "Adriel123"
+ALLOWED_ORIGIN = "*"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hydra-player-db"
+database_id = "PREENCHER_COM_O_ID_DO_D1_EXISTENTE"
+migrations_dir = "backend/migrations"
